@@ -1432,6 +1432,55 @@ func newMetricVcenterVMCPUUsage(cfg MetricConfig) metricVcenterVMCPUUsage {
 	return m
 }
 
+type metricVcenterVMCPUReady struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.vm.cpu.ready metric with initial data.
+func (m *metricVcenterVMCPUReady) init() {
+	m.data.SetName("vcenter.vm.cpu.ready")
+	m.data.SetDescription("The CPU ready of the VM.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricVcenterVMCPUReady) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMCPUReady) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMCPUReady) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMCPUReady(cfg MetricConfig) metricVcenterVMCPUReady {
+	m := metricVcenterVMCPUReady{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterVMCPUUtilization struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2189,6 +2238,7 @@ type MetricsBuilder struct {
 	metricVcenterResourcePoolMemoryShares metricVcenterResourcePoolMemoryShares
 	metricVcenterResourcePoolMemoryUsage  metricVcenterResourcePoolMemoryUsage
 	metricVcenterVMCPUUsage               metricVcenterVMCPUUsage
+	metricVcenterVMCPUReady               metricVcenterVMCPUReady
 	metricVcenterVMCPUUtilization         metricVcenterVMCPUUtilization
 	metricVcenterVMDiskLatencyAvg         metricVcenterVMDiskLatencyAvg
 	metricVcenterVMDiskLatencyMax         metricVcenterVMDiskLatencyMax
@@ -2246,6 +2296,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricVcenterResourcePoolMemoryShares: newMetricVcenterResourcePoolMemoryShares(mbc.Metrics.VcenterResourcePoolMemoryShares),
 		metricVcenterResourcePoolMemoryUsage:  newMetricVcenterResourcePoolMemoryUsage(mbc.Metrics.VcenterResourcePoolMemoryUsage),
 		metricVcenterVMCPUUsage:               newMetricVcenterVMCPUUsage(mbc.Metrics.VcenterVMCPUUsage),
+		metricVcenterVMCPUReady:               newMetricVcenterVMCPUReady(mbc.Metrics.VcenterVMCPUReady),
 		metricVcenterVMCPUUtilization:         newMetricVcenterVMCPUUtilization(mbc.Metrics.VcenterVMCPUUtilization),
 		metricVcenterVMDiskLatencyAvg:         newMetricVcenterVMDiskLatencyAvg(mbc.Metrics.VcenterVMDiskLatencyAvg),
 		metricVcenterVMDiskLatencyMax:         newMetricVcenterVMDiskLatencyMax(mbc.Metrics.VcenterVMDiskLatencyMax),
@@ -2391,6 +2442,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterResourcePoolMemoryShares.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolMemoryUsage.emit(ils.Metrics())
 	mb.metricVcenterVMCPUUsage.emit(ils.Metrics())
+	mb.metricVcenterVMCPUReady.emit(ils.Metrics())
 	mb.metricVcenterVMCPUUtilization.emit(ils.Metrics())
 	mb.metricVcenterVMDiskLatencyAvg.emit(ils.Metrics())
 	mb.metricVcenterVMDiskLatencyMax.emit(ils.Metrics())
@@ -2559,6 +2611,11 @@ func (mb *MetricsBuilder) RecordVcenterResourcePoolMemoryUsageDataPoint(ts pcomm
 // RecordVcenterVMCPUUsageDataPoint adds a data point to vcenter.vm.cpu.usage metric.
 func (mb *MetricsBuilder) RecordVcenterVMCPUUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterVMCPUUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterVMCPUReadyDataPoint adds a data point to vcenter.vm.cpu.ready metric.
+func (mb *MetricsBuilder) RecordVcenterVMCPUReadyDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricVcenterVMCPUReady.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterVMCPUUtilizationDataPoint adds a data point to vcenter.vm.cpu.utilization metric.

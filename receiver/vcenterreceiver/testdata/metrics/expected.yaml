@@ -2653,6 +2653,14 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MHz
+          - description: The CPU ready of the VM.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.ready
+            unit: '%'
           - description: The CPU utilization of the VM.
             gauge:
               dataPoints:

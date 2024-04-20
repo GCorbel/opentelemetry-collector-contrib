@@ -170,6 +170,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordVcenterVMCPUReadyDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 1)
 
 			defaultMetricsCount++

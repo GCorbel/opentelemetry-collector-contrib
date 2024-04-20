@@ -69,6 +69,9 @@ func (v *vcenterMetricScraper) recordVMUsages(
 	}
 	v.mb.RecordVcenterVMCPUUsageDataPoint(now, int64(cpuUsage))
 
+    cpuReady := vm.Summary.QuickStats.OverallCpuReadiness
+	v.mb.RecordVcenterVMCPUReadyDataPoint(now, float64(cpuReady))
+
 	// https://communities.vmware.com/t5/VMware-code-Documents/Resource-Management/ta-p/2783456
 	// VirtualMachine.runtime.maxCpuUsage is a property of the virtual machine, indicating the limit value.
 	// This value is always equal to the limit value set for that virtual machine.

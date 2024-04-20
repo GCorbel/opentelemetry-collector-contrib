@@ -45,6 +45,10 @@
                     <val xsi:type="xsd:int">12</val>
                 </propSet>
                 <propSet>
+                    <name>summary.quickStats.overallCpuReadiness</name>
+                    <val xsi:type="xsd:int">0</val>
+                </propSet>
+                <propSet>
                     <name>summary.quickStats.ssdSwappedMemory</name>
                     <val xsi:type="xsd:long">0</val>
                 </propSet>
